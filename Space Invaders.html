@@ -4,11 +4,14 @@
     <title>Canvas</title>
     <script src="player.js"></script>
     <script src="invader.js"></script>
+    <!--    <script src="invaderBullet.js"></script>-->
+    <script src="playerBullet.js"></script>
+    <!--adds external .js files-->
 </head>
 
 <body>
     <canvas id="gameCanvas" width="500" height="500"></canvas>
-
+ <!-- sets canvas size-->
     <script>
         var canvas, canvasContext;
 
@@ -19,17 +22,17 @@
             document.addEventListener('keydown', keyPressed);
             document.addEventListener('keyup', keyReleased);
 
-            setInterval(mainloop, 1000 / 50);
+            setInterval(mainloop, 1000 / 50);  //runs code at 50 times per second
         }
         //vars
 
         //player vars
         var pXpos = 0;
         var pYpos = 0;
-        var P_WIDTH = 30;
-        var P_HEIGHT = 30;
+        const P_WIDTH = 30;
+        const P_HEIGHT = 30;
         var pXspeed = 5;
-
+        //key vars
         const LEFT_KEY = 37;
         const RIGHT_KEY = 39;
         const SPACE_KEY = 32;
@@ -37,9 +40,9 @@
         var rightKeyPressed = false;
         var spaceKeyPressed = false;
 
-        var startingPos = true
-
-
+        var startingPos = true;
+        var endgame = true;
+        //enemies vars
         var enemies = [];
         var eCount = 0;
         var eRowCount = 0;
@@ -47,40 +50,84 @@
         var Ymod = 0;
         var eYpos = 10;
         var eSize = 15;
-        var eSpeed = 1;
+        var eSpeed = 2;
+        var totalEnemies = 75;
 
+        //bullet vars
+        var bullets = [];
+        var pBulletXpos = 0;
+        var pBulletYpos = 435;
+        var bCool = true;
+        //        var eBullet = [];
+        //        var eBulletXpos = 0;
+        //        var eBulletYpos = 0;
+        var bulletSpeed = 8;
+        var bulletWidth = 5;
+        var bulletHeight = 15;
 
 
         var player = new
         Player(pXpos, pYpos, P_WIDTH, P_HEIGHT, '#19E800', pXspeed);
+        var enemyReady = false;
 
         function mainloop() {
-            colorRect(0, 0, canvas.width, canvas.height, 'black');
+            if (endgame) {
 
-            player.move();
-            player.draw();
+                colorRect(0, 0, canvas.width, canvas.height, 'black');  //color rect for canvas
 
-            if (startingPos) {
-                player.startPos();
-            }
+                player.move();
+                player.draw();
+                makepBullet();
 
-            if (eCount < 60) {
-                console.log("counting")
-                makeEnemy();
-                eCount = eCount + 1;
+                if (bullets.length > 0) {
+                    bullets.forEach(function(playerB, i) {
+                        playerB.draw();
+                        playerB.move();
+//                        playerB.hasHitItem();
+//                        playerB.outOfBounds();
+                        if(playerB.outOfBounds() || playerB.hasCollided()){
+                            delete bullets[i];
+                        }
+                    });
+                    bullets = bullets.filter(item => item !== undefined);
 
-            }
-
-            if (enemies.length > 0) {
-                enemies.forEach(function(enemy, i) {
-                    enemy.draw();
-                });
-            }
+                }
 
 
-        }
+                if (startingPos) {
+                    player.startPos();
+                    makeEnemy(); //starts player in middle of screen
+                }
 
-        function keyPressed(evt) {
+                if (enemies.length > 0) {
+                    enemies.forEach(function(enemy, i) {
+                        enemy.draw();  //draws enemies
+                    });
+
+                    enemyReady = true;
+                }
+
+                if (enemies.length > 0 && enemyReady) {
+                    enemies.forEach(function(enemy, i) {
+                        enemy.touchPlayer();
+                        enemy.move();  //makes enemies move and end game if they touch player
+
+                    });
+
+                    enemies.forEach(function(enemy, i) {
+                        if (enemy.edgeHit()) {
+                            for (i = 0; i < enemies.length; i++) {
+                                enemies[i].drop();
+                            }
+                        }
+                    });
+                } //enemies bracket
+
+            } //if endgame bracket
+    
+        } //mainloop bracket
+
+        function keyPressed(evt) {     //detects if keys have been pressed 
             if (evt.keyCode == LEFT_KEY) {
                 leftKeyPressed = true;
             }
@@ -92,7 +139,7 @@
             }
         }
 
-        function keyReleased(evt) {
+        function keyReleased(evt) {     //detects if keys have beeen released
             if (evt.keyCode == LEFT_KEY) {
                 leftKeyPressed = false;
             }
@@ -104,33 +151,57 @@
             }
         }
 
-        function makeEnemy() {
-            var eXpos = 15 + (25 * eCount);
-            var eYpos = 10;
-            if (eCount > 14) {
-                var eYpos = 35 + Ymod;
-                var eXpos = 15 + (25 * eRowCount);
-                eRowCount = eRowCount + 1;
+        function makeEnemy() {  //makes enemies and places them 
+            for (var i = 0; i < totalEnemies; i++) {
+
+                var eXpos = 15 + (25 * i);
+                var eYpos = 10;
+
+                if (i > 14) {
+                    var eYpos = 35 + Ymod;
+                    var eXpos = 15 + (25 * eRowCount);
+                    eRowCount = eRowCount + 1;
+                }
+                if (i == 29) {
+                    eRowCount = 0;
+                    Ymod = 25;
+                }
+                if (i == 44) {
+                    eRowCount = 0;
+                    Ymod = 50;
+                }
+                if (i == 59) {
+                    eRowCount = 0;
+                    Ymod = 75;
+                }
+
+
+                var e = new Enemy(eXpos, eYpos, eSize, eSize, 'white', eSpeed, eSpeed); //draws enemies
+
+                enemies.push(e);
             }
-            if (eCount == 29){
-                eRowCount = 0;
-                Ymod = 25;
+        }
+
+        function makepBullet() {   //makes the players bullet
+            if (spaceKeyPressed == true && bCool == true) {
+                console.log("bullet");
+                var pBulletXpos = player.x + P_WIDTH/2;
+
+                var p = new playerB(pBulletXpos, pBulletYpos, bulletWidth, bulletHeight, 'red', bulletSpeed);
+
+                bullets.push(p);
+                bCool = false;
+                setTimeout(cooldown, 1000); // adds cooldown to prevent laser beam of death
             }
-             if (eCount == 44){
-                eRowCount = 0;
-                Ymod = 50;
-            }
 
+        }
 
-
-            var e = new
-            Enemy(eXpos, eYpos, eSize, eSize, 'white', eSpeed, eSpeed);
-
-            enemies.push(e);
+        function cooldown() {
+            bCool = true    
         }
 
 
-        function colorRect(x, y, w, h, c) {
+        function colorRect(x, y, w, h, c) { //main color rect
             canvasContext.fillStyle = c;
             canvasContext.fillRect(x, y, w, h);
         }
