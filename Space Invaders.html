@@ -4,14 +4,14 @@
     <title>Canvas</title>
     <script src="player.js"></script>
     <script src="invader.js"></script>
-    <!--    <script src="invaderBullet.js"></script>-->
+    <script src="invaderBullet.js"></script>
     <script src="playerBullet.js"></script>
     <!--adds external .js files-->
 </head>
 
 <body>
     <canvas id="gameCanvas" width="500" height="500"></canvas>
- <!-- sets canvas size-->
+    <!-- sets canvas size-->
     <script>
         var canvas, canvasContext;
 
@@ -22,7 +22,7 @@
             document.addEventListener('keydown', keyPressed);
             document.addEventListener('keyup', keyReleased);
 
-            setInterval(mainloop, 1000 / 50);  //runs code at 50 times per second
+            setInterval(mainloop, 1000 / 50); //runs code at 50 times per second
         }
         //vars
 
@@ -36,9 +36,13 @@
         const LEFT_KEY = 37;
         const RIGHT_KEY = 39;
         const SPACE_KEY = 32;
+        const UP_KEY = 38;
         var leftKeyPressed = false;
         var rightKeyPressed = false;
+        var upKeyPressed = false;
         var spaceKeyPressed = false;
+
+
 
         var startingPos = true;
         var endgame = true;
@@ -50,7 +54,7 @@
         var Ymod = 0;
         var eYpos = 10;
         var eSize = 15;
-        var eSpeed = 2;
+        var eSpeed = 1;
         var totalEnemies = 75;
 
         //bullet vars
@@ -58,10 +62,11 @@
         var pBulletXpos = 0;
         var pBulletYpos = 435;
         var bCool = true;
-        //        var eBullet = [];
-        //        var eBulletXpos = 0;
-        //        var eBulletYpos = 0;
-        var bulletSpeed = 8;
+        var ebullets = [];
+        var eBulletXpos = 0;
+        var eBulletYpos = 0;
+        var eTime = true;
+        var bulletSpeed = 15;
         var bulletWidth = 5;
         var bulletHeight = 15;
 
@@ -73,63 +78,85 @@
         function mainloop() {
             if (endgame) {
 
-                colorRect(0, 0, canvas.width, canvas.height, 'black');  //color rect for canvas
+                colorRect(0, 0, canvas.width, canvas.height, 'black'); //color rect for canvas
 
                 player.move();
                 player.draw();
+                player.hasCollided();
                 makepBullet();
+                makeeBullet();
 
-                if (bullets.length > 0) {
-                    bullets.forEach(function(playerB, i) {
-                        playerB.draw();
-                        playerB.move();
-//                        playerB.hasHitItem();
-//                        playerB.outOfBounds();
-                        if(playerB.outOfBounds() || playerB.hasCollided()){
-                            delete bullets[i];
-                        }
-                    });
-                    bullets = bullets.filter(item => item !== undefined);
-
+                if (player.hasCollided()) {
+                    endgame = false;
                 }
 
+        if (bullets.length > 0) {
+            bullets.forEach(function(playerB, i) {
+                playerB.draw();
+                playerB.move();
 
-                if (startingPos) {
-                    player.startPos();
-                    makeEnemy(); //starts player in middle of screen
+                if (playerB.outOfBounds() || playerB.hasCollided()) {
+                    delete bullets[i]; //detects if bullet is out of bounds or hit enemy
                 }
+            });
+            bullets = bullets.filter(item => item !== undefined); //deletes bullet
 
-                if (enemies.length > 0) {
-                    enemies.forEach(function(enemy, i) {
-                        enemy.draw();  //draws enemies
-                    });
+        }
 
-                    enemyReady = true;
+        if (ebullets.length > 0) { //invaders bullets
+            ebullets.forEach(function(invaderB, i) {
+                invaderB.draw();
+                invaderB.move();
+
+                if (invaderB.outOfBounds()) {
+                    delete ebullets[i]; //detects if bullet is out of bounds or hits
                 }
+            });
+            ebullets = ebullets.filter(item => item !== undefined);
+        }
 
-                if (enemies.length > 0 && enemyReady) {
-                    enemies.forEach(function(enemy, i) {
-                        enemy.touchPlayer();
-                        enemy.move();  //makes enemies move and end game if they touch player
 
-                    });
 
-                    enemies.forEach(function(enemy, i) {
-                        if (enemy.edgeHit()) {
-                            for (i = 0; i < enemies.length; i++) {
-                                enemies[i].drop();
-                            }
-                        }
-                    });
-                } //enemies bracket
+        if (startingPos) {
+            player.startPos();
+            makeEnemy(); //starts player in middle of screen
+        }
 
-            } //if endgame bracket
-    
+        if (enemies.length > 0) {
+            enemies.forEach(function(enemy, i) {
+                enemy.draw(); //draws enemies
+            });
+
+            enemyReady = true;
+        }
+
+        if (enemies.length > 0 && enemyReady) {
+            enemies.forEach(function(enemy, i) {
+                enemy.touchPlayer();
+                enemy.move(); //makes enemies move and end game if they touch player
+                //                        enemy.shoot();
+
+            });
+
+            enemies.forEach(function(enemy, i) {
+                if (enemy.edgeHit()) {
+                    for (i = 0; i < enemies.length; i++) {
+                        enemies[i].drop();
+                    }
+                }
+            });
+        } //enemies bracket
+
+        } //if endgame bracket
+
         } //mainloop bracket
 
-        function keyPressed(evt) {     //detects if keys have been pressed 
+        function keyPressed(evt) { //detects if keys have been pressed 
             if (evt.keyCode == LEFT_KEY) {
                 leftKeyPressed = true;
+            }
+            if (evt.keyCode == UP_KEY) {
+                upKeyPressed = true;
             }
             if (evt.keyCode == RIGHT_KEY) {
                 rightKeyPressed = true;
@@ -139,7 +166,7 @@
             }
         }
 
-        function keyReleased(evt) {     //detects if keys have beeen released
+        function keyReleased(evt) { //detects if keys have beeen released
             if (evt.keyCode == LEFT_KEY) {
                 leftKeyPressed = false;
             }
@@ -149,9 +176,12 @@
             if (evt.keyCode == SPACE_KEY) {
                 spaceKeyPressed = false;
             }
+            if (evt.keyCode == UP_KEY) {
+                upKeyPressed = false;
+            }
         }
 
-        function makeEnemy() {  //makes enemies and places them 
+        function makeEnemy() { //makes enemies and places them 
             for (var i = 0; i < totalEnemies; i++) {
 
                 var eXpos = 15 + (25 * i);
@@ -182,22 +212,43 @@
             }
         }
 
-        function makepBullet() {   //makes the players bullet
+        function makepBullet() { //makes the players bullet
             if (spaceKeyPressed == true && bCool == true) {
-                console.log("bullet");
-                var pBulletXpos = player.x + P_WIDTH/2;
+                var pBulletXpos = player.x + P_WIDTH / 2;
 
                 var p = new playerB(pBulletXpos, pBulletYpos, bulletWidth, bulletHeight, 'red', bulletSpeed);
 
                 bullets.push(p);
                 bCool = false;
-                setTimeout(cooldown, 1000); // adds cooldown to prevent laser beam of death
+                setTimeout(cooldown, 350); // adds cooldown to prevent laser beam of death
             }
 
         }
 
+
+        function makeeBullet() {
+            if (eTime && enemies.length > 0 ) {
+                var eBulletXpos = Math.floor(Math.random() * canvas.width);
+                var eBulletYpos = 0;
+                eTime = false;
+                eCooldown();
+
+
+                var b = new invaderB(eBulletXpos, eBulletYpos, bulletWidth, bulletHeight, 'white', bulletSpeed);
+                ebullets.push(b);
+            }
+        }
+
+        function eCooldown() {
+            setTimeout(eCooldownVar, Math.floor(Math.random() * 1000) + 100);
+        }
+
+        function eCooldownVar() {
+            eTime = true;
+        }
+
         function cooldown() {
-            bCool = true    
+            bCool = true;
         }
 
 

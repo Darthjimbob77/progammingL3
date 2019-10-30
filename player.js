@@ -26,8 +26,33 @@ class Player {
     }
     startPos() {
         this.x = canvas.width / 2 - this.w / 2;
-        this.y = 450;
+        this.y = canvas.height - 50;
         startingPos = false;
+
+    }
+
+    hasHitEnemy(item) {
+        return ((this.x + this.w) >= item.x &&
+                this.x <= (item.x + item.w)) //xcollision
+            &&
+            (this.y >= item.y &&
+                this.y <= (item.y + item.h)); //ycollision
+    }
+
+    hasHitPlayer(playerShip) {
+        return this.hasHitItem(ebullets);
+
+    }
+    hasCollided() { //collided code
+        var self = this;
+        var collided = false;
+
+        ebullets.forEach(function (ebullets, i) {
+            if (self.hasHitEnemy(ebullets)) {
+                collided = true;
+            }
+        });
+        return collided;
 
     }
 }
