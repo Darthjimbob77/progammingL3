@@ -11,6 +11,7 @@
 
 <body>
     <canvas id="gameCanvas" width="500" height="500"></canvas>
+    <p>Instructions: Use the left and right arrow keys to move. Use the space bar to fire. <br> Avoid incomming fire and destroy the invaders before they get you. </p>
     <!-- sets canvas size-->
     <script>
         var canvas, canvasContext;
@@ -20,9 +21,25 @@
             canvasContext = canvas.getContext('2d');
 
             document.addEventListener('keydown', keyPressed);
-            document.addEventListener('keyup', keyReleased);
+            document.addEventListener('keyup', keyReleased);  //listens for keys being pressed and relaeased
 
             setInterval(mainloop, 1000 / 50); //runs code at 50 times per second
+        }
+
+        var username = prompt('Please type username');  //  askes and save players name
+        while (username == "" || username == null) {  //   prvents players not inputing a name
+            username = prompt('Type you r name its not that hard')
+        }
+
+        var level = prompt('Welcome ' + username + ', What level would you like to play easy or hard?', 'easy'); //asks wha level they want to play
+        while (level == null) {
+            level = prompt('Welcome ' + username + ', What level would you like to play easy or hard?', 'Easy');
+        }
+        var levelCaseCheck = level.toLowerCase(); // makes user answer lower case
+        level = levelCaseCheck; //sets level to lowercase
+        while (levelCaseCheck != 'easy' && levelCaseCheck != 'hard') { //if user didnt enter a level correctly, re-asks
+            level = prompt('Please enter a correct level, either easy or hard', 'easy');
+            levelCaseCheck = level.toLowerCase();
         }
         //vars
 
@@ -36,16 +53,15 @@
         const LEFT_KEY = 37;
         const RIGHT_KEY = 39;
         const SPACE_KEY = 32;
-        const UP_KEY = 38;
         var leftKeyPressed = false;
         var rightKeyPressed = false;
-        var upKeyPressed = false;
         var spaceKeyPressed = false;
-
-
-
+        //game vars
         var startingPos = true;
         var endgame = true;
+        var win = false;
+        var score = 0;
+
         //enemies vars
         var enemies = [];
         var eCount = 0;
@@ -69,14 +85,29 @@
         var bulletSpeed = 15;
         var bulletWidth = 5;
         var bulletHeight = 15;
+        var coolDmod = 1200;
+
+        if (level == 'easy') {  // changes numbers for easy and hard 
+            bulletspeed = 10;
+            eSpeed = 1;
+            coolDmod = 1200;
+        }
+
+        if (level == 'hard') {
+            bulletspeed = 20;
+            eSpeed = 1.5;
+            coolDmod = 800;
+ 
+        }
 
 
         var player = new
         Player(pXpos, pYpos, P_WIDTH, P_HEIGHT, '#19E800', pXspeed);
-        var enemyReady = false;
+        var enemyReady = false;  //crates and draws player on canvas
 
-        function mainloop() {
-            if (endgame) {
+        function mainloop() {  // mainloop runs code 50 times per second
+
+            if (endgame) {  // stops game if endgame is set to false
 
                 colorRect(0, 0, canvas.width, canvas.height, 'black'); //color rect for canvas
 
@@ -86,68 +117,82 @@
                 makepBullet();
                 makeeBullet();
 
-                if (player.hasCollided()) {
+
+                if (player.hasCollided()) {  //ends game is player is hit b bullet or enemy
                     endgame = false;
                 }
 
-        if (bullets.length > 0) {
-            bullets.forEach(function(playerB, i) {
-                playerB.draw();
-                playerB.move();
-
-                if (playerB.outOfBounds() || playerB.hasCollided()) {
-                    delete bullets[i]; //detects if bullet is out of bounds or hit enemy
+                if (score == 75 && enemyReady == true) {  // ends game with winning text if player delets all enemies
+                    endgame = false;
+                    win = true;
                 }
-            });
-            bullets = bullets.filter(item => item !== undefined); //deletes bullet
 
-        }
+                if (bullets.length > 0) { // runs player bullets movement and code when one is spawned
+                    bullets.forEach(function(playerB, i) {
+                        playerB.draw();
+                        playerB.move();
 
-        if (ebullets.length > 0) { //invaders bullets
-            ebullets.forEach(function(invaderB, i) {
-                invaderB.draw();
-                invaderB.move();
+                        if (playerB.outOfBounds() || playerB.hasCollided()) {
+                            delete bullets[i]; //detects if bullet is out of bounds or hit enemy
+                        }
+                    });
+                    bullets = bullets.filter(item => item !== undefined); //deletes bullet
 
-                if (invaderB.outOfBounds()) {
-                    delete ebullets[i]; //detects if bullet is out of bounds or hits
                 }
-            });
-            ebullets = ebullets.filter(item => item !== undefined);
-        }
 
+                if (ebullets.length > 0) { //runs invaders bullets
+                    ebullets.forEach(function(invaderB, i) {
+                        invaderB.draw();
+                        invaderB.move();
 
-
-        if (startingPos) {
-            player.startPos();
-            makeEnemy(); //starts player in middle of screen
-        }
-
-        if (enemies.length > 0) {
-            enemies.forEach(function(enemy, i) {
-                enemy.draw(); //draws enemies
-            });
-
-            enemyReady = true;
-        }
-
-        if (enemies.length > 0 && enemyReady) {
-            enemies.forEach(function(enemy, i) {
-                enemy.touchPlayer();
-                enemy.move(); //makes enemies move and end game if they touch player
-                //                        enemy.shoot();
-
-            });
-
-            enemies.forEach(function(enemy, i) {
-                if (enemy.edgeHit()) {
-                    for (i = 0; i < enemies.length; i++) {
-                        enemies[i].drop();
-                    }
+                        if (invaderB.outOfBounds()) {
+                            delete ebullets[i]; //detects if bullet is out of bounds or hits
+                        }
+                    });
+                    ebullets = ebullets.filter(item => item !== undefined);  // remeoves deleted enemies from array
                 }
-            });
-        } //enemies bracket
 
-        } //if endgame bracket
+
+
+                if (startingPos) {
+                    player.startPos();
+                    makeEnemy(); //starts player in middle of screen
+                }
+
+                if (enemies.length > 0) {
+                    enemies.forEach(function(enemy, i) {
+                        enemy.draw(); //draws enemies
+                    });
+
+                    enemyReady = true;
+                }
+
+                if (enemies.length > 0 && enemyReady) {
+                    enemies.forEach(function(enemy, i) {
+                        enemy.touchPlayer();
+                        enemy.move(); //makes enemies move and end game if they touch player
+                        //                        enemy.shoot();
+
+                    });
+
+                    enemies.forEach(function(enemy, i) {  
+                        if (enemy.edgeHit()) {
+                            for (i = 0; i < enemies.length; i++) {
+                                enemies[i].drop();  //drops enemy when touching the wall and swaps dirrection of movement
+                            }
+                        }
+                    });
+                } //enemies bracket
+
+                canvasContext.fillStyle = '#19E800';
+                canvasContext.font = '20pt Calibri';
+                canvasContext.fillText('Score:' + score, canvas.width - 100, 30);  //draws current score
+
+            } //if endgame bracket
+            else {
+                colorRect(0, 0, canvas.width, canvas.height, 'black');
+                winOrLose();  // makes black screen on end of game
+            }
 
         } //mainloop bracket
 
@@ -155,9 +200,7 @@
             if (evt.keyCode == LEFT_KEY) {
                 leftKeyPressed = true;
             }
-            if (evt.keyCode == UP_KEY) {
-                upKeyPressed = true;
-            }
+
             if (evt.keyCode == RIGHT_KEY) {
                 rightKeyPressed = true;
             }
@@ -176,9 +219,7 @@
             if (evt.keyCode == SPACE_KEY) {
                 spaceKeyPressed = false;
             }
-            if (evt.keyCode == UP_KEY) {
-                upKeyPressed = false;
-            }
+    
         }
 
         function makeEnemy() { //makes enemies and places them 
@@ -187,7 +228,7 @@
                 var eXpos = 15 + (25 * i);
                 var eYpos = 10;
 
-                if (i > 14) {
+                if (i > 14) {  // arrnges enemies in rows 
                     var eYpos = 35 + Ymod;
                     var eXpos = 15 + (25 * eRowCount);
                     eRowCount = eRowCount + 1;
@@ -226,8 +267,8 @@
         }
 
 
-        function makeeBullet() {
-            if (eTime && enemies.length > 0 ) {
+        function makeeBullet() {// randomly creates enemy bullets and random locations
+            if (eTime && enemies.length > 0) {
                 var eBulletXpos = Math.floor(Math.random() * canvas.width);
                 var eBulletYpos = 0;
                 eTime = false;
@@ -240,15 +281,29 @@
         }
 
         function eCooldown() {
-            setTimeout(eCooldownVar, Math.floor(Math.random() * 1000) + 100);
+            setTimeout(eCooldownVar, Math.floor(Math.random() * coolDmod) + 100); // cooldown of enemy bullets
         }
 
-        function eCooldownVar() {
+        function eCooldownVar() {// runs makeebullet if there are still enemies
             eTime = true;
         }
 
-        function cooldown() {
+        function cooldown() { // player bullets coolwon
             bCool = true;
+        }
+
+        function winOrLose() { // shows either lose or win screen with score and players name
+            if (win == true) {
+                canvasContext.fillStyle = 'white';
+                canvasContext.font = '25pt Calibri';
+                canvasContext.fillText('You win!!!', 150, canvas.height / 2 - 40);
+                 canvasContext.fillText('You scored ' + score + ' points, ' + username, 50, canvas.height / 2);
+            } else {
+                canvasContext.fillStyle = 'white';
+                canvasContext.font = '25pt Calibri';
+                canvasContext.fillText('You lose',  150, canvas.height / 2- 40);
+                canvasContext.fillText('You scored ' + score + ' points, ' + username, 50, canvas.height / 2 );
+            }
         }
 
 

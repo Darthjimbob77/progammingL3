@@ -1,4 +1,4 @@
-class Player {
+class Player {  // vars for building player
     constructor(x, y, w, h, c, xSpeed) {
         this.x = x;
         this.y = y;
@@ -8,13 +8,13 @@ class Player {
         this.xSpeed = xSpeed;
     }
 
-    draw() {
+    draw() {  // draws player using canvas' colorRect
         canvasContext.fillStyle = this.c;
         canvasContext.fillRect(this.x, this.y, this.w, this.h);
 
     }
 
-    move() {
+    move() { // moves player if left or right arrow keys are pressed 
         if (rightKeyPressed && this.x < canvas.width - this.w) {
             this.x += this.xSpeed;
         }
@@ -24,14 +24,14 @@ class Player {
 
 
     }
-    startPos() {
+    startPos() { // starts player in the centre of the canvas
         this.x = canvas.width / 2 - this.w / 2;
         this.y = canvas.height - 50;
         startingPos = false;
 
     }
 
-    hasHitEnemy(item) {
+    hasHitEnemy(item) {  // detects if player has been hit by enemy of bullet
         return ((this.x + this.w) >= item.x &&
                 this.x <= (item.x + item.w)) //xcollision
             &&

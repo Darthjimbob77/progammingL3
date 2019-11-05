@@ -17,18 +17,18 @@ class Enemy { //main constructer for enemies
         this.x += this.Speed;
     }
 
-    edgeHit() { //if 1 enemy hit the edge all drop down and reverses direction of movement
+    edgeHit() { //if 1 enemy hit the edge all drop down and reverses direction of movement by running drop()
         return this.x >= canvas.width - this.w || this.x < 0;
     }
 
-    drop() {
+    drop() { 
         this.Speed *= -1;
         this.y += 10;
         this.x += this.Speed;
 
     }
 
-    touchPlayer() {
+    touchPlayer() { // ends game if enemy touches player
         if (this.y >= player.y - this.h)
             endgame = false;
     }
